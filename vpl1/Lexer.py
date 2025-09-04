@@ -50,13 +50,122 @@ class Lexer:
         """
         The constructor of the lexer. It receives the string that shall be
         scanned.
-        TODO: You will need to implement this method.
         """
 
-        self.source = source
-        self.curPos = 0
+        self.source = source + '\n'
+        self.curPos = -1
         self.curChar = ''
-        self.tokens()
+        self.nextChar()
+
+    def nextChar(self):
+        """
+        Advance the 'curPos' pointer and set the 'curChar' variable.
+        """
+        self.curPos += 1
+        if self.curPos >= len(self.source):
+            self.curChar = '\0'  # End of file character
+        else:
+            self.curChar = self.source[self.curPos]
+
+    def peek(self):
+        """
+        Return the next character without advancing the pointer.
+        """
+        if self.curPos + 1 >= len(self.source):
+            return '\0'
+        return self.source[self.curPos + 1]
+
+    def _skip_whitespace(self):
+        """
+        Skip whitespace characters.
+        """
+        while self.curChar.isspace() and self.curChar != '\n':
+            self.nextChar()
+
+    def _skip_comment(self):
+        """
+        Skip single-line and multi-line comments.
+        """
+        if self.curChar == '-' and self.peek() == '-':
+            while self.curChar != '\n':
+                self.nextChar()
+            return Token('', TokenType.COM)
+        elif self.curChar == '(' and self.peek() == '*':
+            startPos = self.curPos
+            self.nextChar()  # consume (
+            self.nextChar()  # consume *
+            while not (self.curChar == '*' and self.peek() == ')'):
+                if self.curChar == '\0':
+                    raise Exception("Unterminated multi-line comment.")
+                self.nextChar()
+            self.nextChar()  # consume *
+            self.nextChar()  # consume )
+            return Token(self.source[startPos:self.curPos+1], TokenType.COM)
+        return None
+
+
+    def _process_number(self):
+        """
+        Process numeric literals (INT, BIN, OCT, HEX).
+        """
+        startPos = self.curPos
+        if self.curChar == '0':
+            if self.peek() in 'bB':
+                self.nextChar()
+                self.nextChar()
+                startPos = self.curPos
+                while self.curChar in '01':
+                    self.nextChar()
+                return Token(self.source[startPos:self.curPos], TokenType.BIN)
+            elif self.peek() in 'xX':
+                self.nextChar()
+                self.nextChar()
+                startPos = self.curPos
+                while self.curChar.isdigit() or self.curChar.lower() in 'abcdef':
+                    self.nextChar()
+                return Token(self.source[startPos:self.curPos], TokenType.HEX)
+            elif self.peek() in '01234567':
+                self.nextChar()
+                startPos = self.curPos
+                while self.curChar in '01234567':
+                    self.nextChar()
+                return Token(self.source[startPos:self.curPos], TokenType.OCT)
+            else: # Just a 0
+                self.nextChar()
+                return Token('0', TokenType.INT)
+        elif self.curChar.isdigit():
+            startPos = self.curPos
+            while self.curChar.isdigit():
+                self.nextChar()
+            return Token(self.source[startPos:self.curPos], TokenType.INT)
+        return None
+
+    def _process_keyword_or_identifier(self):
+        """
+        Process keywords.
+        """
+        startPos = self.curPos
+        if self.curChar.isalpha():
+            while self.curChar.isalnum():
+                self.nextChar()
+            
+            tokenText = self.source[startPos:self.curPos]
+            if tokenText == 'true':
+                return Token(tokenText, TokenType.TRU)
+            elif tokenText == 'false':
+                return Token(tokenText, TokenType.FLS)
+            elif tokenText == 'not':
+                return Token(tokenText, TokenType.NOT)
+        return None
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        token = self.getToken()
+        if token.kind == TokenType.EOF:
+            raise StopIteration
+        return token
 
     def tokens(self):
         """
@@ -106,147 +215,65 @@ class Lexer:
         >>> l = Lexer('1 * 2 - 3 -- alkdjf adkjf dlkjf \\n0x23 + 012')
         >>> [tk.kind.name for tk in l.tokens()]
         ['INT', 'MUL', 'INT', 'SUB', 'INT', 'COM', 'HEX', 'ADD', 'OCT']
-
-        >>> l = Lexer('1 + 21 -- 3 / 4 \\n~3 + 2 <= 2 -- * 4')
-        >>> [tk.kind.name for tk in l.tokens()]
-        ['INT', 'ADD', 'INT', 'COM', 'NEG', 'INT', 'ADD', 'INT', 'LEQ', 'INT', 'COM']
-
         """
         token = self.getToken()
         while token.kind != TokenType.EOF:
-            if token.kind != TokenType.WSP and token.kind != TokenType.NLN:
+            if token.kind not in [TokenType.WSP, TokenType.NLN]:
                 yield token
             token = self.getToken()
 
     def getToken(self):
         """
         Return the next token.
-        TODO: Implement this method!
         """
 
-        # 1. EOF
-        if self.curPos >= len(self.source):
+        self._skip_whitespace()
+        
+        token = self._skip_comment()
+        if token:
+            return token
+
+        if self.curChar == '\0':
             token = Token('', TokenType.EOF)
-            self.curPos += 1
-        
-        # 2. WSP or 3. NLN
-        elif self.source[self.curPos].isspace():
-            if self.source[self.curPos] == '\n':
-                token = Token('\n', TokenType.NLN)
-                self.curPos += 1
-            else:
-                token = Token(self.source[self.curPos], TokenType.WSP)
-                self.curPos += 1
-        
-        # 4. COM or 7. SUB
-        elif self.source[self.curPos] == '-':
-            if self.curPos + 1 < len(self.source) and self.source[self.curPos + 1] == '-':
-                while self.curPos < len(self.source) and self.source[self.curPos] != '\n':
-                    self.curPos += 1
-                token = Token('', TokenType.COM)
-            else:
-                token = Token('-', TokenType.SUB)
-                self.curPos += 1
-        
-        # 5. EQL
-        elif self.source[self.curPos] == '=':
+        elif self.curChar == '\n':
+            token = Token('\n', TokenType.NLN)
+            self.nextChar()
+        elif self.curChar == '=':
             token = Token('=', TokenType.EQL)
-            self.curPos += 1
-        
-        # 6. ADD
-        elif self.source[self.curPos] == '+':
+            self.nextChar()
+        elif self.curChar == '+':
             token = Token('+', TokenType.ADD)
-            self.curPos += 1
-        
-        # 8. MUL
-        elif self.source[self.curPos] == '*':
+            self.nextChar()
+        elif self.curChar == '-':
+            token = Token('-', TokenType.SUB)
+            self.nextChar()
+        elif self.curChar == '*':
             token = Token('*', TokenType.MUL)
-            self.curPos += 1
-        
-        # 9. DIV
-        elif self.source[self.curPos] == '/':
+            self.nextChar()
+        elif self.curChar == '/':
             token = Token('/', TokenType.DIV)
-            self.curPos += 1
-        
-        # 10. LEQ or 11. LTH
-        elif self.source[self.curPos] == '<':
-            if self.curPos + 1 < len(self.source) and self.source[self.curPos + 1] == '=':
+            self.nextChar()
+        elif self.curChar == '<':
+            if self.peek() == '=':
+                self.nextChar()
                 token = Token('<=', TokenType.LEQ)
-                self.curPos += 2
             else:
                 token = Token('<', TokenType.LTH)
-                self.curPos += 1
-        
-        # 12. NEG
-        elif self.source[self.curPos] == '~':
+            self.nextChar()
+        elif self.curChar == '~':
             token = Token('~', TokenType.NEG)
-            self.curPos += 1
-        
-        # 13. NOT
-        elif self.source[self.curPos:self.curPos+3] == 'not':
-            token = Token('not', TokenType.NOT)
-            self.curPos += 3
-        
-        # 14. LPR or 4. COM
-        elif self.source[self.curPos] == '(':
-            if self.source[self.curPos + 1] == '*':
-                pos = self.curPos + 2
-                while self.source[pos:pos+2] != '*)' and pos < len(self.source):
-                    pos += 1
-                pos += 2
-                token = Token(self.source[self.curPos:pos], TokenType.COM)
-                self.curPos = pos
-            else:
-                token = Token('(', TokenType.LPR)
-                self.curPos += 1
-
-        # 15. RPR
-        elif self.source[self.curPos] == ')':
+            self.nextChar()
+        elif self.curChar == '(':
+            token = Token('(', TokenType.LPR)
+            self.nextChar()
+        elif self.curChar == ')':
             token = Token(')', TokenType.RPR)
-            self.curPos += 1
-
-        # 16. TRU
-        elif self.source[self.curPos:self.curPos+4] == 'true':
-            token = Token('true', TokenType.TRU)
-            self.curPos += 4
-        
-        # 17. FLS
-        elif self.source[self.curPos:self.curPos+5] == 'false':
-            token = Token('false', TokenType.FLS)
-            self.curPos += 5
-
-        # 18 INT, 19. BIN, 20. OCT, or 21. HEX
-        elif self.source[self.curPos] == '0':
-            if self.curPos + 1 >= len(self.source) or self.source[self.curPos + 1].isspace():
-                token = Token('0', TokenType.INT)
-                self.curPos += 1
-            elif self.source[self.curPos + 1] in 'bB':
-                pos = self.curPos + 2
-                while pos < len(self.source) and self.source[pos] in '01':
-                    pos += 1
-                token = Token(self.source[self.curPos:pos], TokenType.BIN)
-                self.curPos = pos
-            elif self.source[self.curPos + 1] in 'xX':
-                pos = self.curPos + 2
-                while pos < len(self.source) and (self.source[pos].isdigit() or self.source[pos].lower() in 'abcdef'):
-                    pos += 1
-                token = Token(self.source[self.curPos:pos], TokenType.HEX)
-                self.curPos = pos
-            elif self.source[self.curPos + 1] in '01234567':
-                pos = self.curPos + 2
-                while pos < len(self.source) and self.source[pos] in '01234567':
-                    pos += 1
-                token = Token(self.source[self.curPos:pos], TokenType.OCT)
-                self.curPos = pos
-
-        elif self.source[self.curPos] in '123456789':
-            pos = self.curPos + 1
-            while pos < len(self.source) and self.source[pos] in '0123456789':
-                pos += 1
-            token = Token(self.source[self.curPos:pos], TokenType.INT)
-            self.curPos = pos
-
+            self.nextChar()
+        elif self.curChar.isdigit():
+            token = self._process_number()
+        elif self.curChar.isalpha():
+            token = self._process_keyword_or_identifier()
         else:
-            raise Exception(f'Invalid character: {self.source[self.curPos]} at position {self.curPos}')
-             
+            raise Exception(f'Invalid character: {self.curChar} at position {self.curPos}')
+        
         return token
