@@ -54,7 +54,7 @@ class Lexer:
         """
 
         self.source = source
-        self.curPos = -1
+        self.curPos = 0
         self.curChar = ''
         self.tokens()
 
@@ -106,6 +106,11 @@ class Lexer:
         >>> l = Lexer('1 * 2 - 3 -- alkdjf adkjf dlkjf \\n0x23 + 012')
         >>> [tk.kind.name for tk in l.tokens()]
         ['INT', 'MUL', 'INT', 'SUB', 'INT', 'COM', 'HEX', 'ADD', 'OCT']
+
+        >>> l = Lexer('1 + 21 -- 3 / 4 \\n~3 + 2 <= 2 -- * 4')
+        >>> [tk.kind.name for tk in l.tokens()]
+        ['INT', 'ADD', 'INT', 'COM', 'NEG', 'INT', 'ADD', 'INT', 'LEQ', 'INT', 'COM']
+
         """
         token = self.getToken()
         while token.kind != TokenType.EOF:
@@ -137,9 +142,8 @@ class Lexer:
         elif self.source[self.curPos] == '-':
             if self.curPos + 1 < len(self.source) and self.source[self.curPos + 1] == '-':
                 while self.curPos < len(self.source) and self.source[self.curPos] != '\n':
-                    self.self.curPos += 1
+                    self.curPos += 1
                 token = Token('', TokenType.COM)
-                self.curPos += 2
             else:
                 token = Token('-', TokenType.SUB)
                 self.curPos += 1
@@ -179,19 +183,22 @@ class Lexer:
             self.curPos += 1
         
         # 13. NOT
-        elif self.source[self.curPos:self.curPos+2] == 'not':
+        elif self.source[self.curPos:self.curPos+3] == 'not':
             token = Token('not', TokenType.NOT)
             self.curPos += 3
         
         # 14. LPR or 4. COM
         elif self.source[self.curPos] == '(':
-            if self.curPos + 1 == '*':
-                while self.source[self.curPos:self.curPos+2] != '*)' and self.curPos < len(self.source):
-                    self.curPos += 1
-                self.curPos += 4
-                token = Token(self.source[self.curPos:self.curPos+2], TokenType.COM)
-            token = Token('(', TokenType.LPR)
-            self.curPos += 1
+            if self.source[self.curPos + 1] == '*':
+                pos = self.curPos + 2
+                while self.source[pos:pos+2] != '*)' and pos < len(self.source):
+                    pos += 1
+                pos += 2
+                token = Token(self.source[self.curPos:pos], TokenType.COM)
+                self.curPos = pos
+            else:
+                token = Token('(', TokenType.LPR)
+                self.curPos += 1
 
         # 15. RPR
         elif self.source[self.curPos] == ')':
@@ -208,6 +215,38 @@ class Lexer:
             token = Token('false', TokenType.FLS)
             self.curPos += 5
 
-        
+        # 18 INT, 19. BIN, 20. OCT, or 21. HEX
+        elif self.source[self.curPos] == '0':
+            if self.curPos + 1 >= len(self.source) or self.source[self.curPos + 1].isspace():
+                token = Token('0', TokenType.INT)
+                self.curPos += 1
+            elif self.source[self.curPos + 1] in 'bB':
+                pos = self.curPos + 2
+                while pos < len(self.source) and self.source[pos] in '01':
+                    pos += 1
+                token = Token(self.source[self.curPos:pos], TokenType.BIN)
+                self.curPos = pos
+            elif self.source[self.curPos + 1] in 'xX':
+                pos = self.curPos + 2
+                while pos < len(self.source) and (self.source[pos].isdigit() or self.source[pos].lower() in 'abcdef'):
+                    pos += 1
+                token = Token(self.source[self.curPos:pos], TokenType.HEX)
+                self.curPos = pos
+            elif self.source[self.curPos + 1] in '01234567':
+                pos = self.curPos + 2
+                while pos < len(self.source) and self.source[pos] in '01234567':
+                    pos += 1
+                token = Token(self.source[self.curPos:pos], TokenType.OCT)
+                self.curPos = pos
+
+        elif self.source[self.curPos] in '123456789':
+            pos = self.curPos + 1
+            while pos < len(self.source) and self.source[pos] in '0123456789':
+                pos += 1
+            token = Token(self.source[self.curPos:pos], TokenType.INT)
+            self.curPos = pos
+
+        else:
+            raise Exception(f'Invalid character: {self.source[self.curPos]} at position {self.curPos}')
              
         return token
