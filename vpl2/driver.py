@@ -1,5 +1,5 @@
 import sys
-from Expression import *
+from vpl6.Expression import *
 
 if __name__ == "__main__":
     """

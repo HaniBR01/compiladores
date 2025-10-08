@@ -1,5 +1,5 @@
 import sys
-from Expression import *
+from vpl6.Expression import *
 from Lexer import Lexer
 from Parser import Parser
 
