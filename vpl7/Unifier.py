@@ -2,7 +2,6 @@ from Expression import *
 from Visitor import *
 import sys
 
-
 def unify(constraints, sets):
     """
     This function unifies all the type variables in the list of constraints;
@@ -54,7 +53,6 @@ def unify(constraints, sets):
                 sets[t] = new_set
     return unify(rest, sets)
 
-
 def name_sets(sets):
     """
     This method replaces type sets with "canonical type names". A canonical
@@ -91,8 +89,6 @@ def name_sets(sets):
 
     return sets
 
-
-
 def infer_types(expression):
     """
     This method maps all the program variables to type names. We have
@@ -122,4 +118,3 @@ def infer_types(expression):
     constraints = list(expression.accept(ev, ev.fresh_type_var()))
     type_sets = unify(constraints, {})
     return name_sets(type_sets)
-
