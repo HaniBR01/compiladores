@@ -1,6 +1,6 @@
 import sys
 from abc import ABC, abstractmethod
-from vpl6.Expression import *
+from Expression import *
 from enum import Enum, auto
 
 class Visitor(ABC):
@@ -396,8 +396,13 @@ class EvalVisitor(Visitor):
         Here comes most of the complexity of the homework, in five or six lines
         of code! You must implement the evaluation of a function application.
         """
-        # TODO: Implement this method.
-        raise NotImplementedException
+        fval = exp.function.accept(self, env)
+        if not isinstance(fval, Function):
+            sys.exit("Type error")
+        pval = exp.actual.accept(self, env)
+        new_env = dict(fval.env)
+        new_env[fval.formal] = pval
+        return fval.body.accept(self, new_env)
 
     # Método para fazer type checking + evaluation em uma só chamada
     def evaluate_with_type_check(self, expression, env):

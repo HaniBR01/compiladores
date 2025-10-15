@@ -1,6 +1,6 @@
 import sys
 
-from vpl6.Expression import *
+from Expression import *
 from Lexer import Token, TokenType
 
 """
@@ -254,7 +254,23 @@ class Parser:
         >>> exp.accept(ev, None)
         2
         """
-        return self.G_condicional()
+        return self.G_anonimo()
+
+    def G_anonimo(self):
+        if self.current_token.kind == TokenType.LPR:
+            self.eat(TokenType.LPR)
+            exp = self.G_anonimo()
+            self.eat(TokenType.RPR)
+            return exp
+        if self.current_token.kind == TokenType.FNX:
+            self.eat(TokenType.FNX)
+            var_token = self.current_token
+            self.eat(TokenType.VAR)
+            self.eat(TokenType.ARW)
+            body = self.G_anonimo()
+            return Fn(var_token.text, body)
+        else:
+            return self.G_condicional()
 
     def G_condicional(self):
         if self.current_token.kind == TokenType.IFX:
@@ -337,6 +353,17 @@ class Parser:
             return self.G_atomo()
     
     def G_atomo(self):
+        # Parse the first value token
+        exp = self.G_val_tk()
+        
+        # Parse additional value tokens for function application
+        while self.current_token.kind in (TokenType.VAR, TokenType.LPR, TokenType.NUM, TokenType.TRU, TokenType.FLS):
+            arg = self.G_val_tk()
+            exp = App(exp, arg)
+        
+        return exp
+    
+    def G_val_tk(self):
         token = self.current_token
         if token.kind == TokenType.NUM:
             self.eat(TokenType.NUM)
@@ -352,7 +379,7 @@ class Parser:
             return Var(token.text)
         elif token.kind == TokenType.LPR:
             self.eat(TokenType.LPR)
-            expr = self.G_condicional()
+            expr = self.G_anonimo()
             self.eat(TokenType.RPR)
             return expr
         elif token.kind == TokenType.LET:
@@ -360,9 +387,9 @@ class Parser:
             var_token = self.current_token
             self.eat(TokenType.VAR)
             self.eat(TokenType.ASN)
-            var_expr = self.G_condicional()
+            var_expr = self.G_anonimo()
             self.eat(TokenType.INX)
-            in_expr = self.G_condicional()
+            in_expr = self.G_anonimo()
             self.eat(TokenType.END)
             return Let(var_token.text, var_expr, in_expr)
         else:
