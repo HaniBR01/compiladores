@@ -1,6 +1,6 @@
 import sys
 from abc import ABC, abstractmethod
-from vpl6.Expression import *
+from Expression import *
 
 class Visitor(ABC):
     """

@@ -1,6 +1,6 @@
 import sys
 
-from vpl6.Expression import *
+from Expression import *
 from Lexer import Token, TokenType
 
 """
