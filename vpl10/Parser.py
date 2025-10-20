@@ -60,38 +60,38 @@ class Parser:
         Examples:
         >>> parser = Parser([Token('123', TokenType.NUM)])
         >>> exp = parser.parse()
-        >>> ev = EvalVisitor()
+        >>> ev = TypeCheckVisitor()
         >>> exp.accept(ev, None)
-        123
+        <class 'int'>
 
         >>> parser = Parser([Token('True', TokenType.TRU)])
         >>> exp = parser.parse()
-        >>> ev = EvalVisitor()
+        >>> ev = TypeCheckVisitor()
         >>> exp.accept(ev, None)
-        True
+        <class 'bool'>
 
         >>> parser = Parser([Token('False', TokenType.FLS)])
         >>> exp = parser.parse()
-        >>> ev = EvalVisitor()
+        >>> ev = TypeCheckVisitor()
         >>> exp.accept(ev, None)
-        False
+        <class 'bool'>
 
         >>> tk0 = Token('~', TokenType.NEG)
         >>> tk1 = Token('123', TokenType.NUM)
         >>> parser = Parser([tk0, tk1])
         >>> exp = parser.parse()
-        >>> ev = EvalVisitor()
+        >>> ev = TypeCheckVisitor()
         >>> exp.accept(ev, None)
-        -123
+        <class 'int'>
 
         >>> tk0 = Token('3', TokenType.NUM)
         >>> tk1 = Token('*', TokenType.MUL)
         >>> tk2 = Token('4', TokenType.NUM)
         >>> parser = Parser([tk0, tk1, tk2])
         >>> exp = parser.parse()
-        >>> ev = EvalVisitor()
+        >>> ev = TypeCheckVisitor()
         >>> exp.accept(ev, None)
-        12
+        <class 'int'>
 
         >>> tk0 = Token('3', TokenType.NUM)
         >>> tk1 = Token('*', TokenType.MUL)
@@ -99,36 +99,36 @@ class Parser:
         >>> tk3 = Token('4', TokenType.NUM)
         >>> parser = Parser([tk0, tk1, tk2, tk3])
         >>> exp = parser.parse()
-        >>> ev = EvalVisitor()
+        >>> ev = TypeCheckVisitor()
         >>> exp.accept(ev, None)
-        -12
+        <class 'int'>
 
         >>> tk0 = Token('30', TokenType.NUM)
         >>> tk1 = Token('/', TokenType.DIV)
         >>> tk2 = Token('4', TokenType.NUM)
         >>> parser = Parser([tk0, tk1, tk2])
         >>> exp = parser.parse()
-        >>> ev = EvalVisitor()
+        >>> ev = TypeCheckVisitor()
         >>> exp.accept(ev, None)
-        7
+        <class 'int'>
 
         >>> tk0 = Token('3', TokenType.NUM)
         >>> tk1 = Token('+', TokenType.ADD)
         >>> tk2 = Token('4', TokenType.NUM)
         >>> parser = Parser([tk0, tk1, tk2])
         >>> exp = parser.parse()
-        >>> ev = EvalVisitor()
+        >>> ev = TypeCheckVisitor()
         >>> exp.accept(ev, None)
-        7
+        <class 'int'>
 
         >>> tk0 = Token('30', TokenType.NUM)
         >>> tk1 = Token('-', TokenType.SUB)
         >>> tk2 = Token('4', TokenType.NUM)
         >>> parser = Parser([tk0, tk1, tk2])
         >>> exp = parser.parse()
-        >>> ev = EvalVisitor()
+        >>> ev = TypeCheckVisitor()
         >>> exp.accept(ev, None)
-        26
+        <class 'int'>
 
         >>> tk0 = Token('2', TokenType.NUM)
         >>> tk1 = Token('*', TokenType.MUL)
@@ -139,36 +139,36 @@ class Parser:
         >>> tk6 = Token(')', TokenType.RPR)
         >>> parser = Parser([tk0, tk1, tk2, tk3, tk4, tk5, tk6])
         >>> exp = parser.parse()
-        >>> ev = EvalVisitor()
+        >>> ev = TypeCheckVisitor()
         >>> exp.accept(ev, None)
-        14
+        <class 'int'>
 
         >>> tk0 = Token('4', TokenType.NUM)
         >>> tk1 = Token('==', TokenType.EQL)
         >>> tk2 = Token('4', TokenType.NUM)
         >>> parser = Parser([tk0, tk1, tk2])
         >>> exp = parser.parse()
-        >>> ev = EvalVisitor()
+        >>> ev = TypeCheckVisitor()
         >>> exp.accept(ev, None)
-        True
+        <class 'bool'>
 
         >>> tk0 = Token('4', TokenType.NUM)
         >>> tk1 = Token('<=', TokenType.LEQ)
         >>> tk2 = Token('4', TokenType.NUM)
         >>> parser = Parser([tk0, tk1, tk2])
         >>> exp = parser.parse()
-        >>> ev = EvalVisitor()
+        >>> ev = TypeCheckVisitor()
         >>> exp.accept(ev, None)
-        True
+        <class 'bool'>
 
         >>> tk0 = Token('4', TokenType.NUM)
         >>> tk1 = Token('<', TokenType.LTH)
         >>> tk2 = Token('4', TokenType.NUM)
         >>> parser = Parser([tk0, tk1, tk2])
         >>> exp = parser.parse()
-        >>> ev = EvalVisitor()
+        >>> ev = TypeCheckVisitor()
         >>> exp.accept(ev, None)
-        False
+        <class 'bool'>
 
         >>> tk0 = Token('not', TokenType.NOT)
         >>> tk1 = Token('(', TokenType.LPR)
@@ -178,55 +178,59 @@ class Parser:
         >>> tk5 = Token(')', TokenType.RPR)
         >>> parser = Parser([tk0, tk1, tk2, tk3, tk4, tk5])
         >>> exp = parser.parse()
-        >>> ev = EvalVisitor()
+        >>> ev = TypeCheckVisitor()
         >>> exp.accept(ev, None)
-        True
+        <class 'bool'>
 
         >>> tk0 = Token('true', TokenType.TRU)
         >>> tk1 = Token('or', TokenType.ORX)
         >>> tk2 = Token('false', TokenType.FLS)
         >>> parser = Parser([tk0, tk1, tk2])
         >>> exp = parser.parse()
-        >>> ev = EvalVisitor()
+        >>> ev = TypeCheckVisitor()
         >>> exp.accept(ev, None)
-        True
+        <class 'bool'>
 
         >>> tk0 = Token('true', TokenType.TRU)
         >>> tk1 = Token('and', TokenType.AND)
         >>> tk2 = Token('false', TokenType.FLS)
         >>> parser = Parser([tk0, tk1, tk2])
         >>> exp = parser.parse()
-        >>> ev = EvalVisitor()
+        >>> ev = TypeCheckVisitor()
         >>> exp.accept(ev, None)
-        False
+        <class 'bool'>
 
-        >>> tk0 = Token('let', TokenType.LET)
-        >>> tk1 = Token('v', TokenType.VAR)
-        >>> tk2 = Token('<-', TokenType.ASN)
-        >>> tk3 = Token('42', TokenType.NUM)
-        >>> tk4 = Token('in', TokenType.INX)
-        >>> tk5 = Token('v', TokenType.VAR)
-        >>> tk6 = Token('end', TokenType.END)
-        >>> parser = Parser([tk0, tk1, tk2, tk3, tk4, tk5, tk6])
+        >>> t0 = Token('let', TokenType.LET)
+        >>> t1 = Token('v', TokenType.VAR)
+        >>> t2 = Token(':', TokenType.COL)
+        >>> t3 = Token('int', TokenType.INT)
+        >>> t4 = Token('<-', TokenType.ASN)
+        >>> t5 = Token('42', TokenType.NUM)
+        >>> t6 = Token('in', TokenType.INX)
+        >>> t7 = Token('v', TokenType.VAR)
+        >>> t8 = Token('end', TokenType.END)
+        >>> parser = Parser([t0, t1, t2, t3, t4, t5, t6, t7, t8])
         >>> exp = parser.parse()
-        >>> ev = EvalVisitor()
+        >>> ev = TypeCheckVisitor()
         >>> exp.accept(ev, {})
-        42
+        <class 'int'>
 
-        >>> tk0 = Token('let', TokenType.LET)
-        >>> tk1 = Token('v', TokenType.VAR)
-        >>> tk2 = Token('<-', TokenType.ASN)
-        >>> tk3 = Token('21', TokenType.NUM)
-        >>> tk4 = Token('in', TokenType.INX)
-        >>> tk5 = Token('v', TokenType.VAR)
-        >>> tk6 = Token('+', TokenType.ADD)
-        >>> tk7 = Token('v', TokenType.VAR)
-        >>> tk8 = Token('end', TokenType.END)
-        >>> parser = Parser([tk0, tk1, tk2, tk3, tk4, tk5, tk6, tk7, tk8])
+        >>> t0 = Token('let', TokenType.LET)
+        >>> t1 = Token('v', TokenType.VAR)
+        >>> t2 = Token(':', TokenType.COL)
+        >>> t3 = Token('int', TokenType.INT)
+        >>> t4 = Token('<-', TokenType.ASN)
+        >>> t5 = Token('21', TokenType.NUM)
+        >>> t6 = Token('in', TokenType.INX)
+        >>> t7 = Token('v', TokenType.VAR)
+        >>> t8 = Token('+', TokenType.ADD)
+        >>> t9 = Token('v', TokenType.VAR)
+        >>> tA = Token('end', TokenType.END)
+        >>> parser = Parser([t0, t1, t2, t3, t4, t5, t6, t7, t8, t9, tA])
         >>> exp = parser.parse()
-        >>> ev = EvalVisitor()
+        >>> ev = TypeCheckVisitor()
         >>> exp.accept(ev, {})
-        42
+        <class 'int'>
 
         >>> tk0 = Token('if', TokenType.IFX)
         >>> tk1 = Token('2', TokenType.NUM)
@@ -238,9 +242,9 @@ class Parser:
         >>> tk7 = Token('2', TokenType.NUM)
         >>> parser = Parser([tk0, tk1, tk2, tk3, tk4, tk5, tk6, tk7])
         >>> exp = parser.parse()
-        >>> ev = EvalVisitor()
+        >>> ev = TypeCheckVisitor()
         >>> exp.accept(ev, None)
-        1
+        <class 'int'>
 
         >>> tk0 = Token('if', TokenType.IFX)
         >>> tk1 = Token('false', TokenType.FLS)
@@ -250,9 +254,40 @@ class Parser:
         >>> tk5 = Token('2', TokenType.NUM)
         >>> parser = Parser([tk0, tk1, tk2, tk3, tk4, tk5])
         >>> exp = parser.parse()
-        >>> ev = EvalVisitor()
+        >>> ev = TypeCheckVisitor()
         >>> exp.accept(ev, None)
-        2
+        <class 'int'>
+
+        >>> tk0 = Token('fn', TokenType.FNX)
+        >>> tk1 = Token('v', TokenType.VAR)
+        >>> tk2 = Token(':', TokenType.COL)
+        >>> tk3 = Token('int', TokenType.INT)
+        >>> tk4 = Token('=>', TokenType.ARW)
+        >>> tk5 = Token('v', TokenType.VAR)
+        >>> tk6 = Token('+', TokenType.ADD)
+        >>> tk7 = Token('1', TokenType.NUM)
+        >>> parser = Parser([tk0, tk1, tk2, tk3, tk4, tk5, tk6, tk7])
+        >>> exp = parser.parse()
+        >>> ev = TypeCheckVisitor()
+        >>> print(exp.accept(ev, {}))
+        <class 'int'> -> <class 'int'>
+
+        >>> t0 = Token('(', TokenType.LPR)
+        >>> t1 = Token('fn', TokenType.FNX)
+        >>> t2 = Token('v', TokenType.VAR)
+        >>> t3 = Token(':', TokenType.COL)
+        >>> t4 = Token('int', TokenType.INT)
+        >>> t5 = Token('=>', TokenType.ARW)
+        >>> t6 = Token('v', TokenType.VAR)
+        >>> t7 = Token('+', TokenType.ADD)
+        >>> t8 = Token('1', TokenType.NUM)
+        >>> t9 = Token(')', TokenType.RPR)
+        >>> tA = Token('2', TokenType.NUM)
+        >>> parser = Parser([t0, t1, t2, t3, t4, t5, t6, t7, t8, t9, tA])
+        >>> exp = parser.parse()
+        >>> ev = TypeCheckVisitor()
+        >>> exp.accept(ev, {})
+        <class 'int'>
         """
         return self.G_anonimo()
 
@@ -261,9 +296,11 @@ class Parser:
             self.eat(TokenType.FNX)
             var_token = self.current_token
             self.eat(TokenType.VAR)
+            self.eat(TokenType.COL)
+            var_type = self.G_types()
             self.eat(TokenType.ARW)
             body = self.G_anonimo()
-            return Fn(var_token.text, body)
+            return Fn(var_token.text, var_type, body)
         else:
             return self.G_condicional()
 
@@ -326,7 +363,7 @@ class Parser:
 
     def G_fator(self):
         exp = self.G_unario()
-        while self.current_token.kind in (TokenType.MUL, TokenType.DIV, TokenType.MOD):
+        while self.current_token.kind in (TokenType.MUL, TokenType.DIV):
             if self.current_token.kind == TokenType.MUL:
                 self.eat(TokenType.MUL)
                 right = self.G_unario()
@@ -335,10 +372,6 @@ class Parser:
                 self.eat(TokenType.DIV)
                 right = self.G_unario()
                 exp = Div(exp, right)
-            elif self.current_token.kind == TokenType.MOD:
-                self.eat(TokenType.MOD)
-                right = self.G_unario()
-                exp = Mod(exp, right)
         return exp
     
     def G_unario(self):
@@ -347,18 +380,35 @@ class Parser:
             return Neg(self.G_unario())
         elif self.current_token.kind == TokenType.NOT:
             self.eat(TokenType.NOT)
-            return Not(self.G_let_exp())
+            return Not(self.G_unario())
         else:
             return self.G_let_exp()
 
     def G_let_exp(self):
         if self.current_token.kind == TokenType.LET:
+            
             self.eat(TokenType.LET)
-            var_name, var_expr = self.G_decl()
+            
+            var_token = self.current_token
+            var_name = var_token.text
+            self.eat(TokenType.VAR)
+            
+            self.eat(TokenType.COL)
+
+            var_type = self.G_types()
+
+            self.eat(TokenType.ASN)
+            
+            var_expr = self.G_anonimo()
+            
             self.eat(TokenType.INX)
+            
             in_expr = self.G_anonimo()
+            
             self.eat(TokenType.END)
-            return Let(var_name, var_expr, in_expr)
+
+            return Let(var_name, var_type, var_expr, in_expr)
+
         else:
             return self.G_val_exp()
     
@@ -394,24 +444,27 @@ class Parser:
             return expr
         else:
             raise ValueError(f"Parse error: unexpected token {token.kind}")
-
-    def G_decl(self):
+        
+    def G_types(self):
+        token = self.G_type()
+        if self.current_token.kind == TokenType.TPF:
+            self.eat(TokenType.TPF)
+            right_type = self.G_types()
+            token = (token, right_type)
+        return token
+        
+    def G_type(self):
         token = self.current_token
-        if token.kind == TokenType.VAL:
-            self.eat(TokenType.VAL)
-            var_token = self.current_token
-            self.eat(TokenType.VAR)
-            self.eat(TokenType.EQL)
-            var_expr = self.G_anonimo()
-            return var_token.text, var_expr
-        elif token.kind == TokenType.FUN:
-            self.eat(TokenType.FUN)
-            func_name_token = self.current_token
-            self.eat(TokenType.VAR)
-            param_token = self.current_token
-            self.eat(TokenType.VAR)
-            self.eat(TokenType.EQL)
-            func_body = self.G_anonimo()
-            return func_name_token.text, Fun(func_name_token.text, param_token.text, func_body)
+        if token.kind == TokenType.INT:
+            self.eat(TokenType.INT)
+            return type(1)
+        elif token.kind == TokenType.LGC:
+            self.eat(TokenType.LGC)
+            return type(True)
+        if token.kind == TokenType.LPR:
+            self.eat(TokenType.LPR)
+            types = self.G_types()
+            self.eat(TokenType.RPR)
+            return types
         else:
-            raise ValueError(f"Parse error")
+            raise ValueError(f"Parse error: unexpected type token {token.kind}")

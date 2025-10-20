@@ -20,40 +20,42 @@ class TokenType(enum.Enum):
     """
     These are the possible tokens. You don't need to change this class at all.
     """
+
     EOF = -1  # End of file
-    NLN = 0   # New line
-    WSP = 1   # White Space
-    COM = 2   # Comment
-    NUM = 3   # Number (integers)
-    STR = 4   # Strings
-    TRU = 5   # The constant true
-    FLS = 6   # The constant false
-    VAR = 7   # An identifier
-    LET = 8   # The 'let' of the let expression
-    INX = 9   # The 'in' of the let expression
+    NLN = 0  # New line
+    WSP = 1  # White Space
+    COM = 2  # Comment
+    NUM = 3  # Number (integers)
+    STR = 4  # Strings
+    TRU = 5  # The constant true
+    FLS = 6  # The constant false
+    VAR = 7  # An identifier
+    LET = 8  # The 'let' of the let expression
+    INX = 9  # The 'in' of the let expression
     END = 10  # The 'end' of the let expression
-    EQL = 201 # x = y
-    ADD = 202 # x + y
-    SUB = 203 # x - y
-    MUL = 204 # x * y
-    DIV = 205 # x / y
-    LEQ = 206 # x <= y
-    LTH = 207 # x < y
-    NEG = 208 # ~x
-    NOT = 209 # not x
-    LPR = 210 # (
-    RPR = 211 # )
-    ASN = 212 # The assignment '<-' operator
-    ORX = 213 # x or y
-    AND = 214 # x and y
-    IFX = 215 # The 'if' of a conditional expression
-    THN = 216 # The 'then' of a conditional expression
-    ELS = 217 # The 'else' of a conditional expression
-    FNX = 218 # The 'fn' that declares an anonymous function
-    ARW = 219 # The '=>' that separates the parameter from the body of function
-    FUN = 220 # The 'fun' that declares a named function
-    MOD = 221 # x mod y
-    VAL = 222 # The 'val' of a value declaration
+    EQL = 201  # x = y
+    ADD = 202  # x + y
+    SUB = 203  # x - y
+    MUL = 204  # x * y
+    DIV = 205  # x / y
+    LEQ = 206  # x <= y
+    LTH = 207  # x < y
+    NEG = 208  # ~x
+    NOT = 209  # not x
+    LPR = 210  # (
+    RPR = 211  # )
+    ASN = 212  # The assignment '<-' operator
+    ORX = 213  # x or y
+    AND = 214  # x and y
+    IFX = 215  # The 'if' of a conditional expression
+    THN = 216  # The 'then' of a conditional expression
+    ELS = 217  # The 'else' of a conditional expression
+    FNX = 218  # The 'fn' that declares an anonymous function
+    ARW = 219  # The '=>' that separates the parameter from the body of function
+    TPF = 220  # The arrow that indicates a function type
+    COL = 221  # The colon that separates type annotations
+    INT = 222  # The int type ('int')
+    LGC = 223  # The boolean (logic) type ('bool')
 
 
 class Lexer:
@@ -193,6 +195,10 @@ class Lexer:
                 return Token(tokenText, TokenType.FUN)
             elif tokenText == 'val':
                 return Token(tokenText, TokenType.VAL)
+            elif tokenText == 'int':
+                return Token(tokenText, TokenType.INT)
+            elif tokenText == 'bool':
+                return Token(tokenText, TokenType.LGC)
             else:
                 return Token(tokenText, TokenType.VAR)
         return None
@@ -233,6 +239,14 @@ class Lexer:
         >>> l = Lexer("let v <- 2 in v end")
         >>> [tk.kind.name for tk in l.tokens()]
         ['LET', 'VAR', 'ASN', 'NUM', 'INX', 'VAR', 'END']
+
+        >>> l = Lexer("v: int -> int")
+        >>> [tk.kind.name for tk in l.tokens()]
+        ['VAR', 'COL', 'INT', 'TPF', 'INT']
+
+        >>> l = Lexer("v: int -> bool")
+        >>> [tk.kind.name for tk in l.tokens()]
+        ['VAR', 'COL', 'INT', 'TPF', 'LGC']
         """
         token = self.getToken()
         while token.kind != TokenType.EOF:
@@ -267,7 +281,11 @@ class Lexer:
             token = Token('+', TokenType.ADD)
             self.nextChar()
         elif self.curChar == '-':
-            token = Token('-', TokenType.SUB)
+            if self.peek() == '>':
+                token = Token('->', TokenType.TPF)
+                self.nextChar()
+            else:
+                token = Token('-', TokenType.SUB)
             self.nextChar()
         elif self.curChar == '*':
             token = Token('*', TokenType.MUL)
@@ -293,6 +311,9 @@ class Lexer:
             self.nextChar()
         elif self.curChar == ')':
             token = Token(')', TokenType.RPR)
+            self.nextChar()
+        elif self.curChar == ':':
+            token = Token(':', TokenType.COL)
             self.nextChar()
         elif self.curChar.isdigit():
             token = self._process_number()
