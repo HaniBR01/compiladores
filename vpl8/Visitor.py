@@ -3,6 +3,10 @@ from abc import ABC, abstractmethod
 from Expression import *
 from enum import Enum, auto
 
+class Type(Enum):
+    INT = auto()
+    BOOL = auto()
+
 class Visitor(ABC):
     """
     The visitor pattern consists of two abstract classes: the Expression and the
@@ -74,6 +78,14 @@ class Visitor(ABC):
 
     @abstractmethod
     def visit_ifThenElse(self, exp, arg):
+        pass
+
+    @abstractmethod
+    def visit_fn(self, exp, arg):
+        pass
+
+    @abstractmethod
+    def visit_app(self, exp, arg):
         pass
 
 class Function():

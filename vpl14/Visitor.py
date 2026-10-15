@@ -77,6 +77,14 @@ class Visitor(ABC):
     def visit_ifThenElse(self, exp, arg):
         pass
 
+    @abstractmethod
+    def visit_fn(self, exp, arg):
+        pass
+
+    @abstractmethod
+    def visit_app(self, exp, arg):
+        pass
+
 class GenVisitor(Visitor):
     """
     The GenVisitor class compiles arithmetic expressions into a low-level
@@ -85,6 +93,7 @@ class GenVisitor(Visitor):
 
     def __init__(self):
         self.next_var_counter = 0
+        self._fn_count = 0
 
     def next_var_name(self):
         """
@@ -716,70 +725,81 @@ class GenVisitor(Visitor):
         
         return result_reg
     
+    def next_fn_label(self):
+        """
+        Generate a unique label for anonymous functions.
+        """
+        self._fn_count += 1
+        return self._fn_count
+    
+
     def visit_fn(self, exp, prog):
-        # 1. Prologue: Alocar espaço na pilha e salvar o registrador
-        # de retorno (ra) neste espaço.
-        # 2. Passar o valor de a0 para o nome do parâmetro formal
-        # (assumindo-se que o valor do parâmetro estava em "a0"):
-        # 3. Gerar o código para o corpo da função e obter a variável de retorno:
-        # 4. Epilogue: Restaurar o valor do registrador "ra" e ajustar a pilha
-        # 5. Retornar ao chamador via um jump jalr, que usa o valor salvo em "ra"
-        # The address of the function is known and static.
-        
+        """
+        Generate code for an anonymous function (Fn).
+        """
         # Save the address of the function in a variable:
         addr_var = self.next_var_name()
-        # Generate a unique label for the anonymous function.
-        # Generates a unique label like 'anon_func_1', 'anon_func_2', etc.
-        func_addr = self.next_fn_label()
+        
+        # Calculate where the function will start (after the jump instruction)
+        func_addr = prog.get_number_of_instructions() + 2  # +2 because we'll add Addi and Jal
         prog.add_inst(AsmModule.Addi(addr_var, "x0", func_addr))
-        func_after = self.next_fn_label()
-        prog.add_inst(AsmModule.Jal("x0", func_after))
-        # Here's where the function starts:
-        prog.add_label(func_addr)
+        
+        # Jump over the function code - we'll set the target after generating the function
+        jump_over_func = AsmModule.Jal("x0")
+        prog.add_inst(jump_over_func)
+        
+        # Here's where the function starts (func_addr points here):
         # Allocate space on the stack for the return address and local variables.
         prog.add_inst(AsmModule.Addi("sp", "sp", -4)) # Assuming a word size of 4.
-        prog.add_inst(AsmModule.Sw("ra", 0, "sp")) # Store the return address.
+        prog.add_inst(AsmModule.Sw("sp", 0, "ra")) # Store the return address.
+        
         # Handle the function's formal parameter (parameter passed in register 'a0').
         # Store parameter into the formal variable.
         prog.add_inst(AsmModule.Add(exp.formal, "a0", "x0"))
+        
         # Generate the function body:
         return_var = exp.body.accept(self, prog)
+        
         # Move the result of the function body into the return register 'a0'.
         prog.add_inst(AsmModule.Add("a0", return_var, "x0"))
+        
         # Restore the return address and the stack pointer.
-        prog.add_inst(AsmModule.Lw("ra", 0, "sp"))
+        prog.add_inst(AsmModule.Lw("sp", 0, "ra"))
         prog.add_inst(AsmModule.Addi("sp", "sp", 4))
+        
         # Jump back to the caller.
         prog.add_inst(AsmModule.Jalr("x0", "ra"))
-        # Set a label at the end of the function
-        prog.add_label(func_after)
-        return addr_var # Return the generated label for this anonymous function.
-    
-    def visit_app(self, exp, prog):
-        # 1. Generate the instructions to find out the target of the call:
-        # 2. Generate code to compute the parameter of the call:
-        # 3. Jump to the function. Remember that Jarl saves
-        # the current address into some register.
-        # 4. Get the return value of the function. It's meant to be on a0:
+        
+        # Set the target for the jump that skips over the function
+        jump_over_func.set_target(prog.get_number_of_instructions())
+        
+        return addr_var # Return the variable containing the function address.
 
-        # The function being applied is an anonymous function, so we need the label:
-        # Accepting the function will generate or retrieve its label.
-        func_label = exp.function.accept(self, prog)
+    def visit_app(self, exp, prog):
+        """
+        Generate code for applying an anonymous function.
+        """
+        # The function being applied is an anonymous function, so we need its address:
+        # Accepting the function will generate or retrieve its address.
+        func_addr_var = exp.function.accept(self, prog)
+        
         # Generate code for the actual parameter (expression) of the function call:
         param_value = exp.actual.accept(self, prog)
+        
         # Pass the parameter in register a0.
         prog.add_inst(AsmModule.Add("a0", param_value, "x0"))
-        # Jump to the anonymous function's label:
-        # Static jump to the function using its generated label.
-        prog.add_inst(AsmModule.Jal("ra", func_label))
+        
+        # Jump to the anonymous function using its address:
+        # Use jalr to perform indirect jump to the address stored in func_addr_var
+        prog.add_inst(AsmModule.Jalr("ra", func_addr_var, 0))
+        
         # Retrieve the return value (stored in register 'a0').
         ret_var = self.next_var_name()
         # Store the return value in a new variable.
         prog.add_inst(AsmModule.Add(ret_var, "a0", "x0"))
         return ret_var
 
-
-class RenameVisitor(ABC):
+class RenameVisitor(Visitor):
     """
     This visitor traverses the AST of a program, renaming variables to ensure
     that they all have different names.
